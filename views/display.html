@@ -1,0 +1,9 @@
+<div id="contacts">
+    {{ range .Contacts }}
+        <div id>
+            Name: <span>{{ .Name }}</span>
+            Email: <span>{{ .Email }}</span>
+            Phone: <span>{{ .Phone }}</span>
+        </div>
+    {{ end }}
+</div>
