@@ -39,7 +39,7 @@ type Data struct {
 func newData() Data {
 	return Data{
 		Contacts: []Contact{
-			newContact("John", "jd@gmail.com", "123456789"),
+			newContact("John", "aeou", "123456789"),
 			newContact("Doe", "dj@gmail.com", "987654321"),
 			newContact("Jane", "janeD@gmail.com", "123456789"),
 			newContact("Doe", "doeJ@gmail.com", "987654321"),
@@ -47,19 +47,51 @@ func newData() Data {
 	}
 }
 
+func (d *Data) hasEmail(email string) bool {
+	for _, contact := range d.Contacts {
+		if contact.Email == email {
+			return true
+		}
+	}
+	return false
+}
+
+type FormData struct {
+	Values map[string]string
+	Errors map[string]string
+}
+
+func newFormData() FormData {
+	return FormData{
+		Values: make(map[string]string),
+		Errors: make(map[string]string),
+	}
+}
+
+type Page struct {
+	Data Data
+	Form FormData
+}
+
+func newPage() Page {
+	return Page{
+		Data: newData(),
+		Form: newFormData(),
+	}
+}
 
 func main() {
 	// Create a new engine
 	engine := html.New("./views", ".html")
 
-	data := newData()
+	page := newPage()
 
 	app := fiber.New(fiber.Config{
         Views: engine,
     })
 
 	app.Get("/", func(c *fiber.Ctx) error {
-		return c.Render("index", data)
+		return c.Render("index", page)
 	})
 
 	app.Post("/contacts", func(c *fiber.Ctx) error {
@@ -67,8 +99,18 @@ func main() {
 		email := c.FormValue("email")
 		phone := c.FormValue("phone")
 
-		data.Contacts = append(data.Contacts, newContact(name, email, phone))
-		return c.Render("display", data)
+		if page.Data.hasEmail(email) {
+			formData := newFormData()
+			formData.Values["name"] = name
+			formData.Values["email"] = email
+			formData.Values["phone"] = phone
+			formData.Errors["email"] = "Email already exists"
+			c.Status(fiber.StatusUnprocessableEntity);
+			return c.Render("form", formData)
+		}
+
+		page.Data.Contacts = append(page.Data.Contacts, newContact(name, email, phone))
+		return c.Render("display", page.Data)
 	});
 
 
